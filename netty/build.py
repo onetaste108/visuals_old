@@ -5,6 +5,7 @@ from keras.models import Model
 from keras import backend as K
 
 from netty import model_vgg
+from netty import model_variational
 from netty import module_style
 from netty import module_content
 
@@ -14,6 +15,10 @@ def build(args):
     losses = []
     module_inputs = []
     module_models = []
+
+    if args["variational"]:
+        loss_model = model_variational.build(args)
+        losses.append(loss_model(input))
 
     if args["style"]:
         loss_model, target_model, targets = module_style.build(args)

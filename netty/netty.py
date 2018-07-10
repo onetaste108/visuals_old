@@ -12,17 +12,22 @@ class Netty:
         self.args = {
             "style": True,
             "style_w": 1,
-            "style_layers": [3,6],
+            "style_layers": [1,4,7,11,15],
 
             "content": True,
             "content_w": 1,
-            "content_layers": [6,7],
+            "content_layers": [12],
+
+            "variational": True,
+            "variational_w": 1,
+            "variational_pow": 1.25,
 
             "octaves": 1,
             "octave_a": .4,
 
             "size": [512,512],
             "iters": 10,
+            "iter": 20,
 
             "model": "vgg16",
             "pool": "avg",
@@ -42,14 +47,13 @@ class Netty:
     def set_tgs(self, img):
         tgs = []
         for i in range(len(self.modules)):
-            if i == 1: self.feed["content"] = img[i]
+            if i == 1: self.feed["content"] = preprocess(img[i])
             t = self.modules[i].predict(np.array([preprocess(img[i])]))
-            tgs.extend(t)
+            if type(t) is list:
+                tgs.extend(t)
+            else:
+                tgs.append(t)
         self.tgs = tgs
-
-    def set_x0(self,img=None):
-        if img == "content":
-            self.feed["x0"] = self.feed["content"]
 
     def render(self):
         if self.feed["x0"] is None:
@@ -79,6 +83,14 @@ class Netty:
             grad_values = np.array(outs[1:]).flatten().astype('float64')
             return loss_value, grad_values
         return fn
+
+
+    def set_x0(self,img=None):
+        if img == "content":
+            self.feed["x0"] = self.feed["content"]
+
+    def clear(self):
+        K.clear_session()
 
 
 class Evaluator():
