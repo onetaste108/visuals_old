@@ -4,25 +4,29 @@ def imload(path):
     img = Image.open(path)
     img = np.float32(img)
     return img
-def imsize(img,size,mode=Image.BILINEAR):
-    if img.shape[0] == size[1] and img.shape[1] == size[0]: return img
-
+def imsize(img,size=None,factor=None,mode=Image.BILINEAR):
     img = Image.fromarray(np.clip(img,0,255).astype("uint8"))
-    im_ratio = img.size[0] / img.size[1]
-    crop_ratio = size[0] / size[1]
-    if im_ratio < crop_ratio:
-        crop_factor = size[0] / img.size[0]
-    else:
-        crop_factor = size[1] / img.size[1]
-    new_size = np.array(img.size) * crop_factor
-    new_middle = new_size / 2
-    new_padding = (new_middle[0] - size[0] / 2,
-                   new_middle[1] - size[1] / 2,
-                   new_middle[0] + size[0] / 2,
-                   new_middle[1] + size[1] / 2)
-    img = img.resize(tuple(np.ceil(new_size).astype("int32")), mode)
-    img = img.crop(new_padding)
+    if size is not None:
+        im_ratio = img.size[0] / img.size[1]
+        crop_ratio = size[0] / size[1]
+        if im_ratio < crop_ratio:
+            crop_factor = size[0] / img.size[0]
+        else:
+            crop_factor = size[1] / img.size[1]
+        new_size = np.array(img.size) * crop_factor
+        new_middle = new_size / 2
+        new_padding = (new_middle[0] - size[0] / 2,
+                       new_middle[1] - size[1] / 2,
+                       new_middle[0] + size[0] / 2,
+                       new_middle[1] + size[1] / 2)
+        img = img.resize(tuple(np.ceil(new_size).astype("int32")), mode)
+        img = img.crop(new_padding)
+    elif factor is not None:
+        new_size = np.array(img.size[:2]) * factor
+        img = img.resize(tuple(np.floor(new_size).astype("int32")), mode)
     return np.float32(img)
+def impropscale(src,tar):
+    return np.sqrt((tar[0]*tar[1]) / (src[0]*src[1]))
 def imshow(img):
     if ifip(): display(Image.fromarray(np.uint8(img)))
 

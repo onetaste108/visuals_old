@@ -54,18 +54,19 @@ class Netty:
     def render(self):
         if self.args["x0"] == "content":
             x0 = self.feed["content"]
+        elif self.args["x0"] == "noise":
+            x0 = np.random.randn(self.args["size"][1],self.args["size"][0],3)
         else:
-            x0 = np.random.randn(self.args["size"][0],self.args["size"][1],3)
+            x0 = preprocess(imsize(self.args["x0"], self.args["size"]))
         callback = self.make_callback()
         bounds = get_bounds(x0)
         print("Render begins")
         for i in range(self.args["iters"]):
             x0, min_val, info = fmin_l_bfgs_b(callback, x0.flatten(), bounds=bounds, maxfun=self.args["iter"])
 
-            imshow(deprocess(x0.reshape((self.args["size"][1], self.args["size"][1], 3))))
+            imshow(deprocess(x0.reshape((self.args["size"][1], self.args["size"][0], 3))))
             print("Iteration",i,"of",self.args["iters"])
-        return deprocess(x0.reshape((self.args["size"][1], self.args["size"][1], 3)))
-
+        return deprocess(x0.reshape((self.args["size"][1], self.args["size"][0], 3)))
 
 
     def make_eval(self):
@@ -75,7 +76,7 @@ class Netty:
 
     def make_callback(self):
         def fn(x):
-            x = x.reshape((1, self.args["size"][1], self.args["size"][1], 3))
+            x = x.reshape((1, self.args["size"][1], self.args["size"][0], 3))
             outs = self.eval([x]+self.tgs)
             loss_value = outs[0]
             grad_values = np.array(outs[1:]).flatten().astype('float64')
@@ -95,7 +96,7 @@ class Netty:
 
     def set_module(self,module,img):
         if module == "style":
-            img = preprocess(imsize(img, self.args["size"] * self.args["style_scale"]))
+            img = preprocess(imsize(img, factor = impropscale(img.shape[:2],self.args["size"][::-1]) * self.args["style_scale"]))
             self.feed["style"] = img
             self.feed["style_chain"] = img
         elif module == "content":
