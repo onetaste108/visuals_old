@@ -12,7 +12,7 @@ def loss_l(w):
 
 def content_l():
     def fn(x):
-        return x+100
+        return x
     return Lambda(fn)
 
 def build(args):

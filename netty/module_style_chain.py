@@ -5,15 +5,25 @@ from keras.layers import Input, Lambda, Multiply
 from keras import backend as K
 import tensorflow as tf
 
-
 def gram_l(offset):
     def fn(x):
-        x = x + offset
-        shape = K.shape(x)
-        x = K.reshape(x, (-1, shape[3]))
-        x = K.dot(K.transpose(x),x)
+        x1 = x[0] + offset
+        x2 = x[1] + offset
+        shape = K.shape(x1)
+        x2 = tf.image.resize_images(x2,shape[1:3])
+        shape2 = K.shape(x2)
+        x1 = K.permute_dimensions(x1,(1,2,3,0))
+        x1 = tf.image.resize_images(x1, shape2[2:])
+        x1 = K.permute_dimensions(x1,(3,0,1,2))
+
+        x1 = K.reshape(x1, (-1, shape[3]))
+        x2 = K.reshape(x2, (-1, shape[3]))
+        x = K.dot(K.transpose(x1),x2)
+
         shape = K.cast(shape[1:],"float32")
-        shape = (2 * shape[0]*shape[1]*shape[2])
+        shape2 = K.cast(shape2[1:],"float32")
+
+        shape = (2 * shape[0]*shape[1]*shape2[2])
         x = x / shape
         return K.expand_dims(x, axis=0)
     return Lambda(fn)
@@ -30,7 +40,13 @@ def build(args):
     vgg = extract_layers(vgg, args["style_layers"])
     octave_model = model_octave.build(args["octaves"], args["octave_a"])
     gram_layer = gram_l(args["style_offset"])
-    model = attach_models(vgg, gram_layer)
+    new_outs = []
+    for i in range(len(vgg.outputs)-1):
+        l1 = vgg.outputs[i]
+        l2 = vgg.outputs[i+1]
+        g = gram_layer([l1,l2])
+        new_outs.append(g)
+    model = Model(vgg.inputs, new_outs)
     model = attach_models(octave_model, model)
 
     targets = []
