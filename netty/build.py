@@ -9,10 +9,12 @@ from netty import model_variational
 from netty import module_content
 from netty import module_style
 from netty import module_style_chain
+from netty import module_mrf
 
 
 def build(args):
-    input = Input((None,None,3))
+    # input = Input((None,None,3))
+    input = Input((args["size"][1],args["size"][0],3))
 
     losses = []
     module_inputs = []
@@ -42,6 +44,13 @@ def build(args):
         module_inputs.extend(targets)
         modules["style_chain"] = target_model
     else: modules["style_chain"] = None
+
+    if args["mrf"]:
+        loss_model, target_model, targets = module_mrf.build(args)
+        losses.append(loss_model([input] + targets))
+        module_inputs.extend(targets)
+        modules["mrf"] = target_model
+    else: modules["mrf"] = None
 
     if len(losses) > 0:
         loss = Lambda(lambda x: K.expand_dims(K.sum(x) / len(losses)))(losses)

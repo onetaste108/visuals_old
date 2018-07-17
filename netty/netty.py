@@ -87,7 +87,7 @@ class Netty:
 
     def setup(self):
         tgs = []
-        for m in ["content", "style", "style_chain"]:
+        for m in ["content", "style", "style_chain", "mrf"]:
             if self.modules[m] is not None:
                 t = self.modules[m].predict(np.array([self.feed[m]]))
                 if type(t) is list: tgs.extend(t)
@@ -99,6 +99,7 @@ class Netty:
             img = preprocess(imsize(img, factor = impropscale(img.shape[:2],self.args["size"][::-1]) * self.args["style_scale"]))
             self.feed["style"] = img
             self.feed["style_chain"] = img
+            self.feed["mrf"] = img
         elif module == "content":
             img = preprocess(imsize(img, self.args["size"]))
             self.feed[module] = img
