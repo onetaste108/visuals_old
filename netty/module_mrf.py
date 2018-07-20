@@ -5,23 +5,31 @@ from keras.layers import Input, Lambda
 from keras.models import Model
 from keras import backend as K
 import tensorflow as tf
+import numpy as np
+from sklearn.feature_extraction.image import reconstruct_from_patches_2d, extract_patches_2d
+
 
 def make_patches(patch_size, patch_stride):
     def fn(x):
-        xshape = K.shape(x)
-        x = K.reshape(x, shape=(1,xshape[1],xshape[2],xshape[3]))
-        x = K.permute_dimensions(x,(3,1,2,0))
-        patches = tf.extract_image_patches(
-            images = x,
-            ksizes = [1,patch_size,patch_size,1],
-            strides = [1,patch_stride,patch_stride,1],
-            rates = [1,1,1,1],
-            padding = "VALID"
-        )
-        pshape = K.shape(patches)
-        patches = K.reshape(patches, shape=(pshape[0],pshape[1]*pshape[2],patch_size,patch_size))
-        patches = K.permute_dimensions(patches,(1,2,3,0))
+        def ext(img):
+            p = extract_patches_2d(img, (patch_size,patch_size))
+            return np.float32(p)
+        # xshape = K.shape(x)
+        # x = K.reshape(x, shape=(xshape[1],xshape[2],xshape[3]))
+        # x = K.permute_dimensions(x,(3,1,2,0))
+        patches = tf.py_func(ext,[x[0]],tf.float32)
+        # patches = tf.extract_image_patches(
+        #     images = x,
+        #     ksizes = [1,patch_size,patch_size,1],
+        #     strides = [1,patch_stride,patch_stride,1],
+        #     rates = [1,1,1,1],
+        #     padding = "VALID"
+        # )
+        # pshape = K.shape(patches)
+        # patches = K.reshape(patches, shape=(pshape[0],pshape[1]*pshape[2],patch_size,patch_size))
+        # patches = K.permute_dimensions(patches,(1,2,3,0))
         patches = K.expand_dims(patches, axis=0)
+        # patches = tf.stop_gradient(patches)
         return patches
     return Lambda(fn)
 
