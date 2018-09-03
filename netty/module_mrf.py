@@ -1,4 +1,5 @@
 from netty.build_utils import *
+from netty.vgg_utils import *
 from netty import model_vgg
 from netty import model_octave
 from keras.layers import Input, Lambda
@@ -6,34 +7,27 @@ from keras.models import Model
 from keras import backend as K
 import tensorflow as tf
 import numpy as np
-from sklearn.feature_extraction.image import reconstruct_from_patches_2d, extract_patches_2d
 
-
-def make_patches(patch_size, patch_stride):
+def make_patches(patch_size, patch_stride, input_shape):
     def fn(x):
-        def ext(img):
-            p = extract_patches_2d(img, (patch_size,patch_size))
-            return np.float32(p)
-        # xshape = K.shape(x)
-        # x = K.reshape(x, shape=(xshape[1],xshape[2],xshape[3]))
-        # x = K.permute_dimensions(x,(3,1,2,0))
-        patches = tf.py_func(ext,[x[0]],tf.float32)
-        # patches = tf.extract_image_patches(
-        #     images = x,
-        #     ksizes = [1,patch_size,patch_size,1],
-        #     strides = [1,patch_stride,patch_stride,1],
-        #     rates = [1,1,1,1],
-        #     padding = "VALID"
-        # )
-        # pshape = K.shape(patches)
-        # patches = K.reshape(patches, shape=(pshape[0],pshape[1]*pshape[2],patch_size,patch_size))
-        # patches = K.permute_dimensions(patches,(1,2,3,0))
+        x = K.reshape(x, shape=(1,input_shape[0],input_shape[1],input_shape[2]))
+        x = K.permute_dimensions(x,(3,1,2,0))
+        patches = tf.extract_image_patches(
+            images = x,
+            ksizes = [1,patch_size,patch_size,1],
+            strides = [1,patch_stride,patch_stride,1],
+            rates = [1,1,1,1],
+            padding = "VALID"
+        )
+        pshape = K.shape(patches)
+        patches = K.reshape(patches, shape=(pshape[0],pshape[1]*pshape[2],patch_size,patch_size))
+        patches = K.permute_dimensions(patches,(1,2,3,0))
         patches = K.expand_dims(patches, axis=0)
         # patches = tf.stop_gradient(patches)
         return patches
     return Lambda(fn)
 
-def match_patches():
+def match_patches(maps):
     def fn(args):
         # [yx,py,px,ch]
         x = args[1][0]
@@ -61,13 +55,17 @@ def loss_l():
         return K.expand_dims(loss, axis=0)
     return Lambda(fn)
 
-def mrf_m(ks,s):
+def mrf_m(ks,s,l,o,mix_shape,tar_shape,maps=None):
     mix = Input((None,None,None))
     tar = Input((None,None,None))
+
     tgs = [tar]
 
-    mix_p = make_patches(ks,s)(mix)
-    tar_p = make_patches(ks,s)(tar)
+    mix_shape = get_vgg_shape(mix_shape, l, o)
+    tar_shape = get_vgg_shape(tar_shape, l, o)
+
+    mix_p = make_patches(ks,s,mix_shape)(mix)
+    tar_p = make_patches(ks,s,tar_shape)(tar)
     match = match_patches()([mix_p,tar_p])
     repatched = repatch()([tar_p,match])
 
@@ -82,17 +80,18 @@ def build(args):
     octave_model = model_octave.build(args["octaves"], args["octave_a"])
     model = attach_models(octave_model, vgg)
 
-    mrf_model = mrf_m(args["mrf_patch_size"], args["mrf_patch_stride"])
-
     targets = []
     losses = []
     layers_num = len(model.outputs) // args["octaves"]
+    mix_shape = [args["size"][1],args["size"][0]]
+    tar_shape = args["style_shape"]
     for o in range(args["octaves"]):
         for l in range(layers_num):
             i = layers_num * o + l
 
             targets.append(Input(model.outputs[i].shape[1:]))
             layer_weight = 1 / len(args["style_layers"])
+            mrf_model = mrf_m(args["mrf_patch_size"], args["mrf_patch_stride"], args["mrf_layers"][l], o, mix_shape, tar_shape)
             layer_loss = mrf_model([model.outputs[i], targets[i]])
             layer_loss = Lambda(lambda x:x*layer_weight)(layer_loss)
             losses.append(layer_loss)

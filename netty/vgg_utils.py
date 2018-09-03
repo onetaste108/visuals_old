@@ -13,3 +13,38 @@ def get_bounds(x0):
           [- vgg_offsets[1], 255 - vgg_offsets[1]],
           [- vgg_offsets[2], 255 - vgg_offsets[2]]] * (x0.size//3)
     return bounds
+def get_vgg_shape(input_shape, layer, octave=0, model="vgg16", padding="valid"):
+    input_shape = np.array(input_shape)
+    shape = input_shape
+    for o in range(octave):
+        shape = (shape - 5) // 2 + 1
+    depth = 3
+    if model == "vgg16":
+        if layer > 18:
+            print("Error num layers")
+            return
+        for l in range(layer+1):
+            if l in [1,2,4,5,7,8,9,11,12,13,15,16,17]:
+                if padding == "valid":
+                    shape = shape - 2
+            elif l in [3,6,10,14,18]:
+                shape = shape // 2
+        if layer in range(1,4): depth = 64
+        elif layer in range(4,7): depth = 128
+        elif layer in range(7,11): depth = 256
+        elif layer in range(11,19): depth = 512
+    elif model == "vgg19":
+        if layer > 22:
+            print("Error num layers")
+            return
+        for l in range(layer+1):
+            if l in [1,2,4,5,7,8,9,10,12,13,14,15,17,18,19,20]:
+                if padding == "valid":
+                    shape = shape - 2
+            elif l in [3,6,10,14,18]:
+                shape = shape // 2
+        if layer in range(1,4): depth = 64
+        elif layer in range(4,7): depth = 128
+        elif layer in range(7,12): depth = 256
+        elif layer in range(12,22): depth = 512
+    return np.array([shape[0],shape[1],depth])

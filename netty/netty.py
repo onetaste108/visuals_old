@@ -26,6 +26,8 @@ class Netty:
             "variational_w": 1,
             "variational_pow": 1.25,
 
+            "maps": False,
+
             "octaves": 1,
             "octave_a": .4,
 
@@ -100,9 +102,13 @@ class Netty:
             self.feed["style"] = img
             self.feed["style_chain"] = img
             self.feed["mrf"] = img
+
+            self.args["style_shape"] = img.shape[:2]
         elif module == "content":
             img = preprocess(imsize(img, self.args["size"]))
             self.feed[module] = img
+        elif module == "maps":
+            self.feed["maps"] = img
 
     def clear(self):
         for k in self.tgs: del self.tgs[k]
