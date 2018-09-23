@@ -8,7 +8,8 @@ def create_model(model="vgg19", pool="avg", padding="same"):
     elif model == "vgg16": default_model = vgg16.VGG16(weights="imagenet", include_top=False)
     new_layers = []
     for i, layer in enumerate(default_model.layers):
-        if i == 0: new_layers.append(layer)
+        if i == 0:
+            new_layers.append(keras.layers.Input((None,None,3)))
         else:
             if isinstance(layer, keras.layers.Conv2D):
                 config = layer.get_config()
@@ -19,7 +20,11 @@ def create_model(model="vgg19", pool="avg", padding="same"):
                 config["padding"] = padding
                 if pool=="avg": new_layers.append(keras.layers.AveragePooling2D.from_config(config))
                 else: new_layers.append(keras.layers.MaxPooling2D.from_config(config))
-    model = keras.models.Sequential(layers=new_layers)
+    input = new_layers[0]
+    output = input
+    for i in range(1,len(new_layers)):
+        output = new_layers[i](output)
+    model = keras.models.Model(input,output)
     for new, old in zip(model.layers, default_model.layers): new.set_weights(old.get_weights())
     return model
 

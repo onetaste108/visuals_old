@@ -27,7 +27,7 @@ def make_patches(patch_size, patch_stride, input_shape):
         return patches
     return Lambda(fn)
 
-def match_patches(maps):
+def match_patches():
     def fn(args):
         # [yx,py,px,ch]
         x = args[1][0]
