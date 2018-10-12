@@ -16,7 +16,7 @@ class Netty:
             "style_layers": [1,4,7,11,15],
             "style_lw": [1,1,1,1,1],
             "style_scale": 1,
-            "style_offset": -20,
+            "style_offset": 0,
 
             "content": True,
             "content_w": 1,
@@ -33,7 +33,7 @@ class Netty:
 
             "size": [512,512],
             "iters": 10,
-            "iter": 20,
+            "disp_int": 10,
 
             "x0": "content",
 
@@ -57,17 +57,15 @@ class Netty:
         if self.args["x0"] == "content":
             x0 = self.feed["content"]
         elif self.args["x0"] == "noise":
-            x0 = np.random.randn(self.args["size"][1],self.args["size"][0],3)
+            x0 = np.random.randn(self.args["size"][1],self.args["size"][0],3) * 10
         else:
             x0 = preprocess(imsize(self.args["x0"], self.args["size"]))
         callback = self.make_callback()
         bounds = get_bounds(x0)
         print("Render begins")
-        for i in range(self.args["iters"]):
-            x0, min_val, info = fmin_l_bfgs_b(callback, x0.flatten(), bounds=bounds, maxfun=self.args["iter"])
 
-            imshow(deprocess(x0.reshape((self.args["size"][1], self.args["size"][0], 3))))
-            print("Iteration",i,"of",self.args["iters"])
+        x0, min_val, info = fmin_l_bfgs_b(callback, x0.flatten(), bounds=bounds, maxfun=self.args["iters"])
+
         return deprocess(x0.reshape((self.args["size"][1], self.args["size"][0], 3)))
 
 
@@ -77,11 +75,19 @@ class Netty:
         return K.function(self.model.inputs, outputs)
 
     def make_callback(self):
+        i = [0]
+        disp_int = self.args["disp_int"]
         def fn(x):
             x = x.reshape((1, self.args["size"][1], self.args["size"][0], 3))
             outs = self.eval([x]+self.tgs)
             loss_value = outs[0]
             grad_values = np.array(outs[1:]).flatten().astype('float64')
+
+            print(i[0],":",loss_value[0])
+            if i[0] % disp_int == 0 and i[0] != 0:
+                imshow(deprocess(x[0]))
+            i[0] += 1
+
             return loss_value, grad_values
         return fn
 

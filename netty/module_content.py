@@ -6,7 +6,7 @@ from keras import backend as K
 
 def loss_l(w):
     def fn(x):
-        x = K.sum(K.square(x)) * w / 2
+        x = K.sum(K.square(x[0]-x[1])) * w / 2
         return K.expand_dims(x)
     return Lambda(fn)
 

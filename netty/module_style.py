@@ -13,7 +13,7 @@ def gram_l(offset):
         x = K.reshape(x, (-1, shape[3]))
         x = K.dot(K.transpose(x),x)
         shape = K.cast(shape[1:],"float32")
-        shape = (2 * shape[0]*shape[1]*shape[2])
+        shape = (1 * shape[0]*shape[1]*shape[2])
         x = x / shape
         return K.expand_dims(x, axis=0)
     return Lambda(fn)

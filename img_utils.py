@@ -2,9 +2,9 @@ from PIL import Image
 import numpy as np
 def imload(path):
     img = Image.open(path)
-    img = np.float32(img)
+    img = np.uint8(img)
     return img
-def imsize(img,size=None,factor=None,mode=Image.BILINEAR):
+def imsize(img,size=None,max_size=None,factor=None,mode=Image.BILINEAR):
     img = Image.fromarray(np.clip(img,0,255).astype("uint8"))
     if size is not None:
         im_ratio = img.size[0] / img.size[1]
@@ -24,11 +24,13 @@ def imsize(img,size=None,factor=None,mode=Image.BILINEAR):
     elif factor is not None:
         new_size = np.array(img.size[:2]) * factor
         img = img.resize(tuple(np.floor(new_size).astype("int32")), mode)
-    return np.float32(img)
+    return np.uint8(img)
 def impropscale(src,tar):
     return np.sqrt((tar[0]*tar[1]) / (src[0]*src[1]))
 def imshow(img):
     if ifip(): display(Image.fromarray(np.uint8(img)))
+def imsave(img,path):
+    Image.fromarray(np.uint8(img)).save(path)
 
 def histmatch(src, color):
     new = np.zeros(src.shape)
