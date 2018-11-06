@@ -4,7 +4,7 @@ from scipy.optimize import fmin_l_bfgs_b
 from scipy.optimize import minimize
 
 from keras import backend as K
-from img_utils import *
+import img_utils as im
 from netty.vgg_utils import *
 
 class Netty:
@@ -32,8 +32,11 @@ class Netty:
             "octave_a": .4,
 
             "size": [512,512],
+            "patch_window": 256,
             "iters": 10,
             "disp_int": 10,
+
+            "window": 256,
 
             "x0": "content",
 
@@ -59,7 +62,7 @@ class Netty:
         elif self.args["x0"] == "noise":
             x0 = np.random.randn(self.args["size"][1],self.args["size"][0],3) * 10
         else:
-            x0 = preprocess(imsize(self.args["x0"], self.args["size"]))
+            x0 = preprocess(im.size(self.args["x0"], self.args["size"]))
         callback = self.make_callback()
         bounds = get_bounds(x0)
         print("Render begins")
@@ -85,7 +88,7 @@ class Netty:
 
             print(i[0],":",loss_value[0])
             if i[0] % disp_int == 0 and i[0] != 0:
-                imshow(deprocess(x[0]))
+                im.show(deprocess(x[0]))
             i[0] += 1
 
             return loss_value, grad_values
@@ -104,14 +107,14 @@ class Netty:
 
     def set_module(self,module,img):
         if module == "style":
-            img = preprocess(imsize(img, factor = impropscale(img.shape[:2],self.args["size"][::-1]) * self.args["style_scale"]))
+            img = preprocess(im.size(img, factor = im.propscale(img.shape[:2],self.args["size"][::-1]) * self.args["style_scale"]))
             self.feed["style"] = img
             self.feed["style_chain"] = img
             self.feed["mrf"] = img
 
             self.args["style_shape"] = img.shape[:2]
         elif module == "content":
-            img = preprocess(imsize(img, self.args["size"]))
+            img = preprocess(im.size(img, self.args["size"]))
             self.feed[module] = img
         elif module == "maps":
             self.feed["maps"] = img

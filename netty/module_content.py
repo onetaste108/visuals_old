@@ -1,5 +1,6 @@
 from netty.build_utils import *
 from netty import model_vgg
+from netty import model_patch_vgg
 from netty import model_octave
 from keras.layers import Input, Lambda
 from keras import backend as K
@@ -16,10 +17,14 @@ def content_l():
     return Lambda(fn)
 
 def build(args):
+    # vgg = model_patch_vgg.build(args)
     vgg = model_vgg.build(args)
-    vgg = extract_layers(vgg, args["content_layers"])
-    octave_model = model_octave.build(1, args["octave_a"])
-    model = attach_models(octave_model, vgg)
+
+    # model = extract_outputs(vgg, args["content_layers"])
+    model = extract_layers(vgg, args["content_layers"])
+
+    # octave_model = model_octave.build(1, args["octave_a"])
+    # model = attach_models(octave_model, vgg)
     content_layer = content_l();
     model = attach_models(model, content_layer)
 

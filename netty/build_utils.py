@@ -1,11 +1,18 @@
 from keras.models import Model
 
 def extract_layers(base_model, layers):
+    inputs = base_model.input
     model_layers = []
-    inputs = base_model.inputs
     for l in layers:
         model_layers.append(base_model.layers[l].output)
     return Model(inputs, model_layers)
+
+def extract_outputs(base_model, layers):
+    inputs = base_model.input
+    outs = []
+    for o in layers:
+        outs.append(base_model.outputs[o])
+    return Model(inputs, outs)
 
 def attach_models(base_model, model):
     inputs = base_model.inputs
