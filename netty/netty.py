@@ -6,6 +6,7 @@ from scipy.optimize import minimize
 from keras import backend as K
 import img_utils as im
 from netty.vgg_utils import *
+from netty import gram_patcher
 
 class Netty:
     def __init__(self):
@@ -33,6 +34,7 @@ class Netty:
 
             "size": [512,512],
             "patch_window": 256,
+            "patch_window_ref_stride": 256,
             "iters": 10,
             "disp_int": 10,
 
@@ -54,8 +56,6 @@ class Netty:
         self.model, self.modules = build(self.args)
         self.eval = self.make_eval()
 
-
-
     def render(self):
         if self.args["x0"] == "content":
             x0 = self.feed["content"]
@@ -71,18 +71,47 @@ class Netty:
 
         return deprocess(x0.reshape((self.args["size"][1], self.args["size"][0], 3)))
 
+    def render_patched(self,iters=1,maxfun=10):
+        if self.args["x0"] == "content":
+            x0 = self.feed["content"]
+        elif self.args["x0"] == "noise":
+            x0 = np.random.randn(self.args["size"][1],self.args["size"][0],3) * 10
+        else:
+            x0 = preprocess(im.size(self.args["x0"], self.args["size"]))
+
+        patches, tgs = gram_patcher.match(x0,self.feed["style"],self.modules["style"],self.args["patch_window"])
+        m,n = patches.shape[:2]
+        for it in range(iters):
+            for i in range(m):
+                for j in range(n):
+                    patch = x0[patches[i][j][0][0]:patches[i][j][0][1],patches[i][j][1][0]:patches[i][j][1][1]]
+                    patch = self.render_patch(patch,tgs[i][j],maxfun)
+                    x0[patches[i][j][0][0]:patches[i][j][0][1],patches[i][j][1][0]:patches[i][j][1][1]] = patch
+
+        return deprocess(x0.reshape((self.args["size"][1], self.args["size"][0], 3)))
+
+    def render_patch(self,x0,tgs,iters=1):
+        shape = x0.shape
+        bounds = get_bounds(x0)
+        callback = self.make_callback(shape=shape[:2],tgs=tgs)
+        x0, min_val, info = fmin_l_bfgs_b(callback, x0.flatten(), bounds=bounds, maxfun=iters)
+        return x0.reshape(shape)
 
     def make_eval(self):
         grads = K.gradients(self.model.output, self.model.inputs[0])[0]
         outputs = [self.model.output] + [grads]
         return K.function(self.model.inputs, outputs)
 
-    def make_callback(self):
+    def make_callback(self,shape=None,tgs=None):
         i = [0]
         disp_int = self.args["disp_int"]
+        if shape is None:
+            shape = self.args["size"][::-1]
+        if tgs is None:
+            tgs = self.tgs
         def fn(x):
-            x = x.reshape((1, self.args["size"][1], self.args["size"][0], 3))
-            outs = self.eval([x]+self.tgs)
+            x = x.reshape((1, shape[0], shape[1], 3))
+            outs = self.eval([x]+tgs)
             loss_value = outs[0]
             grad_values = np.array(outs[1:]).flatten().astype('float64')
 
@@ -93,8 +122,6 @@ class Netty:
 
             return loss_value, grad_values
         return fn
-
-
 
     def setup(self):
         tgs = []

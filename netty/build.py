@@ -13,8 +13,7 @@ from netty import module_mrf
 
 
 def build(args):
-    # input = Input((None,None,3))
-    input = Input((args["size"][1],args["size"][0],3))
+    input = Input((None,None,3))
 
     losses = []
     module_inputs = []

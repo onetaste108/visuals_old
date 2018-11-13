@@ -1,5 +1,5 @@
 from netty.build_utils import *
-from netty import model_vgg, model_patch_vgg
+from netty import model_vgg
 from netty import model_octave
 from keras.layers import Input, Lambda, Multiply
 from keras import backend as K
@@ -26,15 +26,13 @@ def loss_l(w):
     return Lambda(fn)
 
 def build(args):
-    vgg = model_patch_vgg.build(args)
-    vgg = extract_outputs(vgg, args["style_layers"])
-    # vgg = extract_layers(vgg, args["style_layers"])
+    vgg = model_vgg.build(args)
+    vgg = extract_layers(vgg, args["style_layers"])
 
-    vgg.summary()
     octave_model = model_octave.build(args["octaves"], args["octave_a"])
     gram_layer = gram_l(args["style_offset"])
     model = attach_models(vgg, gram_layer)
-    # model = attach_models(octave_model, model)
+    model = attach_models(octave_model, model)
 
     targets = []
     losses = []

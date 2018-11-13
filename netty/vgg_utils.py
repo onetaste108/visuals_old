@@ -41,10 +41,35 @@ def get_vgg_shape(input_shape, layer, octave=0, model="vgg16", padding="valid"):
             if l in [1,2,4,5,7,8,9,10,12,13,14,15,17,18,19,20]:
                 if padding == "valid":
                     shape = shape - 2
-            elif l in [3,6,10,14,18]:
+            elif l in [3,6,11,16,21]:
                 shape = shape // 2
         if layer in range(1,4): depth = 64
         elif layer in range(4,7): depth = 128
         elif layer in range(7,12): depth = 256
         elif layer in range(12,22): depth = 512
     return np.array([shape[0],shape[1],depth])
+def get_location(loc,l,model="vgg19"):
+    loc = np.int32(loc)
+    psize = 1
+    if model == "vgg19":
+        while l > 0:
+            if l in [1,2,4,5,7,8,9,10,12,13,14,15,17,18,19,20]:
+                psize += 2
+                loc += 0
+            elif l in [3,6,11,16,21]:
+                psize *= 2
+                loc *= 2
+            l -= 1
+    elif model == "vgg16":
+        while l > 0:
+            if l in [1,2,4,5,7,8,9,11,12,13,15,16,17]:
+                psize += 2
+                loc += 0
+            elif l in [3,6,10,14,18]:
+                psize *= 2
+                loc *= 2
+            l -= 1
+    p_min = 0
+    p_max = psize
+    location = np.int32([[loc[0]+p_min,loc[0]+p_max],[loc[1]+p_min,loc[1]+p_max]])
+    return location

@@ -28,7 +28,7 @@ def create_model(model="vgg19", pool="avg", padding="same"):
     for new, old in zip(model.layers, default_model.layers): new.set_weights(old.get_weights())
     return model
 
-def load_model(model="vgg19", pool="avg", padding="same"):
+def load_model(model="vgg19", pool="avg", padding="valid"):
     path = os.path.join("models",model+"_"+pool+"_"+padding+".h5")
     if not os.path.exists(path):
         print("VGG model not found. Creating model...")

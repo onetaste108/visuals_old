@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-from img_utils import *
+import img_utils as im
 
 
 class PatchMatch:
@@ -13,8 +13,8 @@ class PatchMatch:
         self.stride_2 = stride_2
         self.iters = 0
 
-        self.img1 = np.int32(img1)
-        self.img2 = np.int32(img2)
+        self.img1 = np.float32(img1)
+        self.img2 = np.float32(img2)
 
         self.m1,self.n1 = img1.shape[:2]
         self.m2,self.n2 = img2.shape[:2]
@@ -27,15 +27,12 @@ class PatchMatch:
     def update_best_vals(self):
         self.best_vals = compute_best_vals(self.img1,self.img2,self.offsets,self.pm1,self.pn1,self.ksize,self.stride_1,self.stride_2)
 
-    def match(self,iters=1):
+    def match(self,iters=1,p=True,r=True):
         for i in range(iters):
             dir = int(self.iters%2==0)*2-1
-            iterate(self.img1,self.img2,self.offsets,self.best_vals,dir,self.ksize,self.pm1,self.pn1,self.pm2,self.pn2,self.stride_1,self.stride_2)
-            print(np.mean(self.best_vals))
+            iterate(self.img1,self.img2,self.offsets,self.best_vals,dir,self.ksize,self.pm1,self.pn1,self.pm2,self.pn2,self.stride_1,self.stride_2,p,r)
+            print(".",end=" ")
             self.iters += 1
-
-    def brute_match(self):
-
 
     def get(self,stride=None):
         if stride is None:
@@ -45,7 +42,7 @@ class PatchMatch:
     def get_best(self):
         return np.uint8(reconstruct_best(self.img2,self.offsets,self.best_vals,self.ksize,self.stride_1,self.stride_2))
 
-@njit("i4(i4[:,:,:],i4[:,:,:])")
+@njit("f4(f4[:,:,:],f4[:,:,:])")
 def loss(p1,p2):
     return np.sum(np.square(p1-p2))
 
@@ -81,7 +78,7 @@ def reconstruct_best(img,offsets,best_vals,ksize,stride_1,stride_2):
             offsets[y][x][1]*stride_2:offsets[y][x][1]*stride_2+ksize]
     return out
 
-@njit("void(i4[:,:,:],i4[:,:,:],i4[:,:,:],i4[:,:],i8,i8,i8,i8,i8,i8,i8,i8,i8,i8)")
+@njit("void(f4[:,:,:],f4[:,:,:],i4[:,:,:],f4[:,:],i8,i8,i8,i8,i8,i8,i8,i8,i8,i8)")
 def propagate(img1,img2,offsets,best_vals,y,x,dir,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2):
     ca = np.empty((3,2),dtype=np.int32)
     count = 1
@@ -116,7 +113,7 @@ def propagate(img1,img2,offsets,best_vals,y,x,dir,ksize,pm1,pn1,pm2,pn2,stride_1
             best_vals[y][x] = cav[best]
 
 
-@njit("void(i4[:,:,:],i4[:,:,:],i4[:,:,:],i4[:,:],i8,i8,i8,i8,i8,i8,i8,i8,i8)")
+@njit("void(f4[:,:,:],f4[:,:,:],i4[:,:,:],f4[:,:],i8,i8,i8,i8,i8,i8,i8,i8,i8)")
 def randomize(img1,img2,offsets,best_vals,y,x,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2):
     w = max(pm2,pn2)
     a = .5
@@ -143,20 +140,22 @@ def randomize(img1,img2,offsets,best_vals,y,x,ksize,pm1,pn1,pm2,pn2,stride_1,str
     best_vals[y][x] = best_val
     offsets[y][x] = best_offset
 
-@njit("void(i4[:,:,:],i4[:,:,:],i4[:,:,:],i4[:,:],i8,i8,i8,i8,i8,i8,i8,i8)")
-def iterate(img1,img2,offsets,best_vals,dir,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2):
+@njit("void(f4[:,:,:],f4[:,:,:],i4[:,:,:],f4[:,:],i8,i8,i8,i8,i8,i8,i8,i8,b1,b1)")
+def iterate(img1,img2,offsets,best_vals,dir,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2,p,r):
     if dir > 0:
         r = [0,pm1,0,pn1]
     else:
         r = [pm1-1,1,pn1-1,1]
     for i in range(r[0],r[1],dir):
         for j in range(r[2],r[3],dir):
-            propagate(img1,img2,offsets,best_vals,i,j,dir,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2)
-            randomize(img1,img2,offsets,best_vals,i,j,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2)
+            if p:
+                propagate(img1,img2,offsets,best_vals,i,j,dir,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2)
+            if r:
+                randomize(img1,img2,offsets,best_vals,i,j,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2)
 
 # @njit("i4[:,:](i4[:,:,:],i4[:,:,:],i4[:,:,:],i8,i8,i8)")
 def compute_best_vals(img1,img2,offsets,pm1,pn1,ksize,stride_1,stride_2):
-        best_vals = np.empty((pm1,pn1),dtype=np.int32)
+        best_vals = np.empty((pm1,pn1),dtype=np.float32)
         for y in range(pm1):
             for x in range(pn1):
                 best_vals[y][x] = loss(
