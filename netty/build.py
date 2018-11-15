@@ -37,20 +37,6 @@ def build(args):
         modules["style"] = target_model
     else: modules["style"] = None
 
-    if args["style_chain"]:
-        loss_model, target_model, targets = module_style_chain.build(args)
-        losses.append(loss_model([input] + targets))
-        module_inputs.extend(targets)
-        modules["style_chain"] = target_model
-    else: modules["style_chain"] = None
-
-    if args["mrf"]:
-        loss_model, target_model, targets = module_mrf.build(args)
-        losses.append(loss_model([input] + targets))
-        module_inputs.extend(targets)
-        modules["mrf"] = target_model
-    else: modules["mrf"] = None
-
     if len(losses) > 0:
         loss = Lambda(lambda x: K.expand_dims(K.sum(x) / len(losses)))(losses)
     else:
