@@ -8,8 +8,7 @@ from netty import model_vgg
 from netty import model_variational
 from netty import module_content
 from netty import module_style
-from netty import module_style_chain
-from netty import module_mrf
+
 
 
 def build(args):

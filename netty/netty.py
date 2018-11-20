@@ -19,34 +19,30 @@ class Netty:
             "style_scale": 1,
             "style_offset": 0,
 
-            "content": True,
+            "content": False,
             "content_w": 1,
             "content_layers": [12],
 
             "variational": True,
-            "variational_w": 1e-3,
+            "variational_w": 1e-1,
             "variational_pow": 1.25,
-
-            "maps": False,
 
             "octaves": 1,
             "octave_a": .4,
 
             "size": [512,512],
 
-            "patch_window": 256,
-            "patch_window_ref_stride": 256,
+            "patch_window": 1024*2,
+            "patch_window_ref_stride": 64,
             "patch_overlay": 64,
             "patch_maxfun": 10,
             "patch_iters": 1,
             "patch_display": True,
 
-            "maxfun": 10,
-            "disp_int": 10,
+            "maxfun": 100,
+            "disp_int": 50,
 
-            "window": 256,
-
-            "x0": "content",
+            "x0": "noise",
 
             "model": "vgg19",
             "pool": "avg",
