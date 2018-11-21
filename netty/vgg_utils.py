@@ -13,7 +13,7 @@ def get_bounds(x0):
           [- vgg_offsets[1], 255 - vgg_offsets[1]],
           [- vgg_offsets[2], 255 - vgg_offsets[2]]] * (x0.size//3)
     return bounds
-def get_vgg_shape(input_shape, layer, octave=0, model="vgg16", padding="valid"):
+def get_vgg_shape(input_shape, layer, octave=0, model="vgg19", padding="valid"):
     input_shape = np.array(input_shape)
     shape = input_shape
     for o in range(octave):
@@ -73,3 +73,52 @@ def get_location(loc,l,model="vgg19"):
     p_max = psize
     location = np.int32([[loc[0]+p_min,loc[0]+p_max],[loc[1]+p_min,loc[1]+p_max]])
     return location
+
+def scale_mask(img,layers,model="vgg19"):
+    if len(img.shape) > 2:
+        img = img[:,:,0]
+    img = np.float32(img)
+    img = img / 255
+    img = 1-np.where(img>.5, 1, 0)
+    prev = img
+    outs = []
+
+    if model == "vgg16":
+        for l in range(1,max(layers)+1):
+            if l in [1,2,4,5,7,8,9,11,12,13,15,16,17]:
+
+                new = np.zeros(np.int32(prev.shape)-2,np.float32)
+                for i in range(new.shape[0]):
+                    for j in range(new.shape[1]):
+                        if np.sum(prev[i:i+3,j:j+3]) > 0:
+                            new[i][j] = 1
+                prev = new
+            elif l in [3,6,10,14,18]:
+                new = np.zeros(np.int32(prev.shape)//2,np.float32)
+                for i in range(new.shape[0]):
+                    for j in range(new.shape[1]):
+                        if np.sum(prev[i*2:i*2+1,j*2:j*2+1]) > 0:
+                            new[i][j] = 1
+                prev = new
+            if l in layers:
+                outs.append(np.array([1-prev]))
+
+    elif model == "vgg19":
+        for l in range(1,max(layers)+1):
+            if l in [1,2,4,5,7,8,9,10,12,13,14,15,17,18,19,20]:
+                new = np.zeros(np.int32(prev.shape)-2,np.float32)
+                for i in range(new.shape[0]):
+                    for j in range(new.shape[1]):
+                        if np.sum(prev[i:i+3,j:j+3]) > 0:
+                            new[i][j] = 1
+                prev = new
+            elif l in [3,6,11,16,21]:
+                new = np.zeros(np.int32(prev.shape)//2,np.float32)
+                for i in range(new.shape[0]):
+                    for j in range(new.shape[1]):
+                        if np.sum(prev[i*2:i*2+1,j*2:j*2+1]) > 0:
+                            new[i][j] = 1
+                prev = new
+            if l in layers:
+                outs.append(np.array([1-prev]))
+    return outs

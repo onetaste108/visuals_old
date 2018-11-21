@@ -7,6 +7,7 @@ from keras import backend as K
 import img_utils as im
 from netty.vgg_utils import *
 from netty import gram_patcher
+from netty import netty_utils as nutil
 
 class Netty:
     def __init__(self):
@@ -70,7 +71,7 @@ class Netty:
             print("Rendering patch...")
             x = self.render_patched(x0,self.args["patch_iters"], self.args["patch_maxfun"])
         else:
-            self.setup()
+            # self.setup()
             print("Rendering one...")
             x = self.render_one(x0)
         print("Rendered!")
@@ -144,16 +145,64 @@ class Netty:
         tgs = []
         for m in ["content", "style"]:
             if self.modules[m] is not None:
-                t = self.modules[m].predict(np.array([self.feed[m]]))
+                t = self.modules[m].predict([np.array([self.feed[m]])]+self.feed["style_masks"])
                 if type(t) is list: tgs.extend(t)
                 else: tgs.append(t)
         self.tgs = tgs
 
-    def set_module(self,module,img):
+    def get_style_tgs(self):
+        n = len(self.feed["style"])
+        tgs = []
+        for i in range(n):
+            tgs.append(self.modules["style"].predict([np.array([self.feed["style"][i]])]+self.feed["style_masks"][i]))
+        return nutil.mix_tgs(tgs)
+
+    def set_tgs(self,tgs):
+        self.tgs = tgs
+
+    def set_style(self,imgs,masks=None,scales=None):
+        if type(imgs) is not list: imgs = [imgs]
+        if masks is None:
+            masks = [None for i in range(len(imgs))]
+        if scales is None:
+            scales = [1 for i in range(len(imgs))]
+        else:
+            if type(scales) is not list: scales = [scales]
+
+        self.feed["style"] = []
+        self.feed["style_masks"] = []
+
+        for img, mask, scale in zip(imgs,masks,scales):
+            img = preprocess(im.size(img, factor=im.propscale(img.shape[:2],self.args["size"][::-1]) * scale))
+            self.feed["style"].append(img)
+
+            if mask is not None:
+                mask = im.size(mask,img.shape[:2][::-1])
+                l_mask = scale_mask(mask,self.args["style_layers"])
+            else:
+                l_mask = []
+                for l in self.args["style_layers"]:
+                    vgg_shape = get_vgg_shape(img.shape[:2],l)[:-1]
+                    l_mask.append(np.ones([1,vgg_shape[0],vgg_shape[1]],np.float32))
+            self.feed["style_masks"].append(l_mask)
+
+
+    def set_module(self,module,img,mask=None):
         if module == "style":
             img = preprocess(im.size(img, factor = im.propscale(img.shape[:2],self.args["size"][::-1]) * self.args["style_scale"]))
             self.feed["style"] = img
             self.args["style_shape"] = img.shape[:2]
+            if mask is not None:
+                mask = im.size(mask,img.shape[:2][::-1])
+                masks = scale_mask(mask,self.args["style_layers"])
+
+            else:
+                masks = []
+                for l in self.args["style_layers"]:
+                    masks.append(np.ones(get_vgg_shape(img.shape[:2],l)[:-1],np.float32))
+            for i in range(len(masks)):
+                masks[i] = np.array([masks[i]])
+            self.feed["style_masks"] = masks
         elif module == "content":
             img = preprocess(im.size(img, self.args["size"]))
             self.feed[module] = img

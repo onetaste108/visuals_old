@@ -29,6 +29,8 @@ def propscale(src,tar):
     return np.sqrt((tar[0]*tar[1]) / (src[0]*src[1]))
 def show(img):
     if ifip(): display(Image.fromarray(np.uint8(img)))
+def prev(img):
+    show(size(img,factor=propscale(img.shape[:2],[256,256])))
 def save(img,path):
     Image.fromarray(np.uint8(img)).save(path)
 
