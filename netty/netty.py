@@ -144,18 +144,26 @@ class Netty:
     def setup(self):
         tgs = []
         for m in ["content", "style"]:
-            if self.modules[m] is not None:
-                t = self.modules[m].predict([np.array([self.feed[m]])]+self.feed["style_masks"])
+            if self.args[m]:
+                if m == "content":
+                    t = self.get_content_tgs()
+                elif m == "style":
+                    t = self.get_style_tgs()
                 if type(t) is list: tgs.extend(t)
                 else: tgs.append(t)
-        self.tgs = tgs
+        self.set_tgs(tgs)
 
     def get_style_tgs(self):
         n = len(self.feed["style"])
         tgs = []
         for i in range(n):
-            tgs.append(self.modules["style"].predict([np.array([self.feed["style"][i]])]+self.feed["style_masks"][i]))
+            t = self.modules["style"].predict([np.array([self.feed["style"][i]])]+self.feed["style_masks"][i])
+            tgs.append(t)
         return nutil.mix_tgs(tgs)
+
+    def get_content_tgs(self):
+        tgs = self.modules["content"].predict(np.array([self.feed["content"]]))
+        return tgs
 
     def set_tgs(self,tgs):
         self.tgs = tgs
@@ -186,6 +194,9 @@ class Netty:
                     l_mask.append(np.ones([1,vgg_shape[0],vgg_shape[1]],np.float32))
             self.feed["style_masks"].append(l_mask)
 
+    def set_content(self,img):
+        img = preprocess(im.size(img, self.args["size"]))
+        self.feed["content"] = img
 
     def set_module(self,module,img,mask=None):
         if module == "style":

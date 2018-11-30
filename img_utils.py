@@ -3,6 +3,12 @@ import numpy as np
 def load(path):
     img = Image.open(path)
     img = np.uint8(img)
+    if len(img.shape) == 2:
+        img = np.expand_dims(img,-1)
+    if img.shape[-1] == 1:
+        img = np.repeat(img,3,-1)
+    if img.shape[-1] > 3:
+        img = img[...,:3]
     return img
 def size(img,size=None,max_size=None,factor=None,mode=Image.BILINEAR):
     img = Image.fromarray(np.clip(img,0,255).astype("uint8"))
@@ -65,7 +71,17 @@ def set_color(src, color, hist=True, luma=True):
     return src
 
 
+def rot(img):
+    out = [img]
+    for i in range(1,4):
+        out.append(np.rot90(img,i))
+    return out
 
+def bw(img):
+    img = np.copy(img)
+    bw=img[:,:,0]/3+img[:,:,1]/3+img[:,:,2]/3
+    img[:,:,0],img[:,:,1],img[:,:,2] = bw,bw,bw
+    return img
 
 
 def ifip():
