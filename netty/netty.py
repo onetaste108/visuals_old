@@ -181,7 +181,11 @@ class Netty:
         self.feed["style_masks"] = []
 
         for img, mask, scale in zip(imgs,masks,scales):
-            img = preprocess(im.size(img, factor=im.propscale(img.shape[:2],self.args["size"][::-1]) * scale))
+            if scale == 0:
+                factor = 1
+            else:
+                factor=im.propscale(img.shape[:2],self.args["size"][::-1]) * scale
+            img = preprocess(im.size(img, factor=factor))
             self.feed["style"].append(img)
 
             if mask is not None:
