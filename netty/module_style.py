@@ -46,15 +46,11 @@ def loss_l(w):
         return K.expand_dims(x)
     return Lambda(fn)
 
-def build(args):
-    vgg = model_vgg.build(args)
-    model = extract_layers(vgg, args["style_layers"])
-    # model = model_octave.build(args["octaves"], args["octave_a"])
-
-    mask_inputs = []
-    mask_outs = []
+def build_mask_model(model):
     apmask = apply_mask()
     mask_gram_layer = mask_gram_l()
+    mask_inputs = []
+    mask_outs = []
     for i,o in enumerate(model.outputs):
         mask_input = Input((o.shape[1],o.shape[2]),name="mask_input_"+str(i))
         mask_inputs.append(mask_input)
@@ -62,22 +58,22 @@ def build(args):
         mask_output = mask_gram_layer([mask_output,mask_input])
         mask_outs.append(mask_output)
     mask_model = Model(model.inputs+mask_inputs,mask_outs)
+    return mask_model, mask_inputs
 
-    gram_layer = gram_l(args["style_offset"])
-    # mask_model = attach_models(mask_model, gram_layer)
-    model = attach_models(model, gram_layer)
+
+def build(args):
+    vgg = model_vgg.build(args)
+    model = extract_layers(vgg, args["style_layers"])
+    mask_model, mask_inputs = build_mask_model(model)
 
     targets = []
     losses = []
-    layers_num = len(model.outputs)
-    for l in range(layers_num):
-        i = l
-        targets.append(Input(model.outputs[i].shape[1:],name="wtf"+str(l)))
-        layer_weight = args["style_lw"][l] / len(args["style_layers"])
-        layer_loss = loss_l(layer_weight)([targets[i], model.outputs[i]])
+    for i in range(len(mask_model.outputs)):
+        targets.append(Input(mask_model.outputs[i].shape[1:],name="wtf"+str(i)))
+        layer_weight = args["style_lw"][i] / len(args["style_layers"])
+        layer_loss = loss_l(layer_weight)([targets[i], mask_model.outputs[i]])
         losses.append(layer_loss)
     loss = Lambda(lambda x: K.expand_dims(K.sum(x)) * args["style_w"])(losses)
 
-
-    loss_model = Model(model.inputs + targets, loss)
-    return loss_model, mask_model, targets
+    loss_model = Model(mask_model.inputs + targets, loss)
+    return loss_model, mask_model, mask_inputs+targets

@@ -43,7 +43,7 @@ class Netty:
             "maxfun": 100,
             "disp_int": 50,
 
-            "x0": "noise",
+            "x0": "n",
 
             "model": "vgg19",
             "pool": "avg",
@@ -60,12 +60,10 @@ class Netty:
         self.eval = self.make_eval()
 
     def render(self):
-        if self.args["x0"] == "content":
-            x0 = self.feed["content"]
-        elif self.args["x0"] == "noise":
+        if self.args["x0"] == "i":
+            x0 = self.feed["x0"]
+        elif self.args["x0"] == "n":
             x0 = np.random.randn(self.args["size"][1],self.args["size"][0],3) * 10
-        else:
-            x0 = preprocess(im.size(self.args["x0"], self.args["size"]))
 
         if min(self.args["size"][0],self.args["size"][1]) > self.args["patch_window"]:
             print("Rendering patch...")
@@ -130,7 +128,7 @@ class Netty:
             tgs = self.tgs
         def fn(x):
             x = x.reshape((1, shape[0], shape[1], 3))
-            outs = self.eval([x]+tgs)
+            outs = self.eval([x]+self.feed["x0_mask"]+tgs)
             loss_value = outs[0]
             grad_values = np.array(outs[1:]).flatten().astype('float64')
             print(".",end=" ")
@@ -201,6 +199,24 @@ class Netty:
     def set_content(self,img):
         img = preprocess(im.size(img, self.args["size"]))
         self.feed["content"] = img
+
+    def set_x0(self,img=None,mask=None):
+        if img is None:
+            self.args["x0"] = "n"
+        else:
+            self.args["x0"] = "i"
+            img = preprocess(im.size(img, self.args["size"]))
+            self.feed["x0"] = img
+
+        if mask is not None:
+            mask = im.size(mask,self.args["size"])
+            l_mask = scale_mask(mask,self.args["style_layers"])
+        else:
+            l_mask = []
+            for l in self.args["style_layers"]:
+                vgg_shape = get_vgg_shape(img.shape[:2],l)[:-1]
+                l_mask.append(np.ones([1,vgg_shape[0],vgg_shape[1]],np.float32))
+        self.feed["x0_mask"] = l_mask
 
     def set_module(self,module,img,mask=None):
         if module == "style":
