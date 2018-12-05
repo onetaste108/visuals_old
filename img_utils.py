@@ -39,6 +39,16 @@ def prev(img):
     show(size(img,factor=propscale(img.shape[:2],[256,256])))
 def save(img,path):
     Image.fromarray(np.uint8(img)).save(path)
+def save_frame(image, path):
+    import os
+    save = np.copy(image)
+    save_path = path
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    num = len(os.listdir(save_path))
+    save_path = os.path.join(save_path, "frame"+str(num)+".jpg")
+    with open(save_path, 'wb') as file:
+        Image.fromarray(save).save(file, 'jpeg')
 
 def histmatch(src, color):
     new = np.zeros(src.shape)

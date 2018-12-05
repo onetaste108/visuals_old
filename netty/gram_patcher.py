@@ -1,5 +1,6 @@
 import numpy as np
 from netty import module_style
+from netty import netty_utils as nutil
 
 def split(img,ksize,overlay):
     m,n = img.shape[:2]
@@ -34,14 +35,14 @@ def split_ref(img,ksize,stride):
             patches[i][j] = [[i*stride,i*stride+ksize],[j*stride,j*stride+ksize]]
     return patches
 
-def compute_grams(img,patches,model):
+def compute_grams(img,mask,patches,model):
     m,n = patches.shape[:2]
     grams = []
     for i in range(m):
         grams.append([])
         for j in range(n):
             patch = img[patches[i][j][0][0]:patches[i][j][0][1],patches[i][j][1][0]:patches[i][j][1][1]]
-            gram = model.predict(np.float32([patch]))
+            gram = model.predict([np.float32([patch])]+mask)
             grams[-1].append(gram)
     return grams
 
@@ -77,10 +78,17 @@ def match_grams(grams1,grams2):
             best_grams[-1].append(bg)
     return best_ids, best_grams
 
-def match(img1,img2,model,ksize=512,overlay=0,ref_stride=256):
-    patches_1 = split(img1,ksize,overlay)
-    patches_2 = split_ref(img2,ksize,ref_stride)
-    grams_1 = compute_grams(img1,patches_1,model)
-    grams_2 = compute_grams(img2,patches_2,model)
-    best_ids, best_grams = match_grams(grams_1,grams_2)
+def match(src,src_mask,imgs,img_masks,model,ksize=512,overlay=0,ref_stride=256):
+    patches_src = split(src,ksize,overlay)
+    patches_imgs = []
+    for img in imgs:
+        patches_imgs.append(split_ref(img,ksize,ref_stride))
+    grams_src = compute_grams(src,src_mask,patches_src,model)
+    grams_imgs = []
+    for img, mask, patch in zip(imgs,img_masks,patches_imgs):
+        grams_src.append(compute_grams(img,mask,patch,model))
+    best_grams = []
+    for gram in grams_imgs:
+        best_ids, best_gram = match_grams(grams_src,gram)
+        best_grams.append(best_gram)
     return patches_1, best_grams
