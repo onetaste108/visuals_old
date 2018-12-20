@@ -20,8 +20,6 @@ def build(args):
 
     model = extract_layers(vgg, args["content_layers"])
 
-    octave_model = model_octave.build(1, args["octave_a"])
-    model = attach_models(octave_model, vgg)
     content_layer = content_l();
     model = attach_models(model, content_layer)
 

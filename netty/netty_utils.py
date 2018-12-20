@@ -1,3 +1,4 @@
+import numpy as np
 def add_tgs(tgs):
     l_tgs = len(tgs)
     l_gram = len(tgs[0])
@@ -9,12 +10,21 @@ def add_tgs(tgs):
         out.append(t)
     return out
 
-def mix_tgs(tgs):
+def mix_tgs(tgs,w=None):
     l_tgs = len(tgs)
-    out = add_tgs(tgs)
-    l_gram = len(out)
+    l_gram = len(tgs[0])
+    if w is not None:
+        w = np.float32(w)
+        w = w / np.sum(w)
+    else:
+        w = np.float32([1/l_tgs for i in range(l_tgs)])
+
+    out = []
     for i in range(l_gram):
-        out[i] = out[i] / l_tgs
+        t = tgs[0][i] * w[0]
+        for j in range(1,l_tgs):
+            t += tgs[j][i] * w[j]
+        out.append(t)
     return out
 
 def incremental(final=[1024,1024],short=256,step=1.2,maxf=500):
@@ -35,7 +45,7 @@ def incremental(final=[1024,1024],short=256,step=1.2,maxf=500):
         if i == 0:
             maxfun.append(maxf)
         else:
-            maxfun.append(int(maxf/2/pow(step,(i))))
+            maxfun.append(int(maxf/pow(step,(i))))
         new = [int(a*pow(step,(i))),int(b*pow(step,(i)))]
         if min(new) >= min_f:
             new = final

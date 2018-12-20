@@ -39,7 +39,7 @@ def prev(img):
     show(size(img,factor=propscale(img.shape[:2],[256,256])))
 def save(img,path):
     Image.fromarray(np.uint8(img)).save(path)
-def save_frame(image, path):
+def save_frame(image, path, q=75):
     import os
     save = np.copy(image)
     save_path = path
@@ -48,16 +48,25 @@ def save_frame(image, path):
     num = len(os.listdir(save_path))
     save_path = os.path.join(save_path, "frame"+str(num)+".jpg")
     with open(save_path, 'wb') as file:
-        Image.fromarray(save).save(file, 'jpeg')
+        Image.fromarray(save).save(file, 'jpeg', quality=q)
 
-def histmatch(src, color):
+def histmatch(src, color, m1=None, m2=None):
     new = np.zeros(src.shape)
     for ch in range(src.shape[-1]):
         src_ch = src[:,:,ch]
         color_ch = color[:,:,ch]
         oldshape = src_ch.shape
         source = src_ch.ravel()
+        source_backup=source
+        if m1 is not None:
+            m_1 = size(m1,[src.shape[1],src.shape[0]])
+            m_1 = np.int32(np.float32(m_1[:,:,0]).ravel()/255+0.5).astype(np.bool)
+            source = source[m_1]
         template = color_ch.ravel()
+        if m2 is not None:
+            m_2 = size(m2,[color.shape[1],color.shape[0]])
+            m_2 = np.int32(np.float32(m_2[:,:,0]).ravel()/255+0.5).astype(np.bool)
+            template = template[m_2]
         s_values, bin_idx, s_counts = np.unique(source, return_inverse=True, return_counts=True)
         t_values, t_counts = np.unique(template, return_counts=True)
         s_quantiles = np.cumsum(s_counts).astype(np.float64)
@@ -65,7 +74,11 @@ def histmatch(src, color):
         t_quantiles = np.cumsum(t_counts).astype(np.float64)
         t_quantiles /= t_quantiles[-1]
         interp_t_values = np.interp(s_quantiles, t_quantiles, t_values)
-        new[:,:,ch] = interp_t_values[bin_idx].reshape(oldshape)
+        if m1 is not None:
+            source_backup[m_1] = interp_t_values[bin_idx]
+        else:
+            source_backup = interp_t_values[bin_idx]
+        new[:,:,ch] = source_backup.reshape(oldshape)
     return new
 def set_color(src, color, hist=True, luma=True):
     src = np.array(Image.fromarray(np.uint8(np.clip(src,0,255))).convert('YCbCr'))

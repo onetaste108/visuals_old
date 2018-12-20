@@ -86,9 +86,8 @@ class Netty:
     def render(self):
         x0 = self.feed["x0"]
         x0m = self.feed["x0_mask"]
-        tgs = x0m+self.tgs
 
-        x = self.render_patch(x0,tgs,self.args["maxfun"])
+        x = self.render_patch(x0,self.tgs,self.args["maxfun"])
 
         x = deprocess(x)
         im.show(x)
@@ -103,7 +102,7 @@ class Netty:
         p_maxfun = self.args["patch_maxfun"]
 
         for it in range(p_iters):
-            patches, tgs = gram_patcher.match(x0,self.feed["style"],self.modules["style"],self.args["patch_window"])
+            patches, tgs = gram_patcher.match(x0,self.feed["x0_mask"],self.feed["style"],self.feed["style_masks"],self.modules["style"],self.args["patch_window"])
             m,n = patches.shape[:2]
             for i in range(m):
                 for j in range(n):
@@ -131,14 +130,17 @@ class Netty:
     def setup(self):
 
         tgs = []
-        for m in ["content", "style"]:
-            if self.args[m]:
-                if m == "content":
-                    t = self.get_content_tgs()
-                elif m == "style":
-                    t = self.get_style_tgs()
-                if type(t) is list: tgs.extend(t)
-                else: tgs.append(t)
+        if self.args["content"]:
+            t = self.get_content_tgs()
+            tgs.append(t)
+        if self.args["style"]:
+            mask = self.feed["x0_mask"]
+            if type(mask) is list: tgs.extend(mask)
+            else: tgs.append(mask)
+                
+            t = self.get_style_tgs()
+            if type(t) is list: tgs.extend(t)
+            else: tgs.append(t)
         self.set_tgs(tgs)
 
     def get_style_tgs(self):
@@ -147,7 +149,7 @@ class Netty:
         for i in range(n):
             t = self.modules["style"].predict([np.array([self.feed["style"][i]])]+self.feed["style_masks"][i])
             tgs.append(t)
-        return nutil.mix_tgs(tgs)
+        return nutil.mix_tgs(tgs,self.args["style_imgs_w"])
 
     def get_content_tgs(self):
         tgs = self.modules["content"].predict(np.array([self.feed["content"]]))
@@ -156,7 +158,8 @@ class Netty:
     def set_tgs(self,tgs):
         self.tgs = tgs
 
-    def set_style(self,imgs,masks=None,scales=None):
+    def set_style(self,imgs,masks=None,scales=None,w=None):
+        self.args["style_imgs_w"] = w
         if type(imgs) is not list: imgs = [imgs]
 
         if masks is None:
