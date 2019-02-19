@@ -1,0 +1,3 @@
+refine merger
+integrate 2 types of style scales
+dynamic weighting
