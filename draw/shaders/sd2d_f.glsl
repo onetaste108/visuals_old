@@ -29,6 +29,7 @@ float line(vec2 p, vec2 a, vec2 b)
 // VARIABLES ------------------------------------------------------------------
 
 varying vec2 v_pos;
+uniform mat2 matrix;
 
 uniform vec4 color;
 uniform float stroke_weight;
@@ -73,7 +74,7 @@ void main()
   }
   else if (COL_MODE == STROKE)
   {
-    c = stroke(d, color, aa, stroke_weight);
+    c = stroke(d, color, inverse(matrix)*aa, stroke_weight);
   }
 
   gl_FragColor = c;

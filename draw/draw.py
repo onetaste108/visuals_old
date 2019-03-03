@@ -58,8 +58,6 @@ class SD2D:
 
         self.vao.render(GL_TRIANGLE_STRIP)
 
-
-
     def viewport(self,w,h):
         self.prog["screen_size"].value = (w,h)
 

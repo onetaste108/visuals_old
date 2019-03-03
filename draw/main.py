@@ -11,10 +11,11 @@ MOD_1 = False
 MOD_2 = False
 from pyglet.window import key
 
-mat = np.float32([[1,0],[0,1]])
+mat = np.float32([[1,0],
+                  [0,1]])
+mat0 = np.copy(mat)
 
 sd2d.viewport(2,2)
-sd2d.prog["matrix"].value = tuple(np.ravel(mat))
 
 @app.event
 def on_draw():
@@ -32,6 +33,15 @@ def on_draw():
         sd2d.line(-1,y/20*2-1,1,y/20*2-1)
     for x in range(21):
         sd2d.line(x/20*2-1,-1,x/20*2-1,1)
+
+    sd2d.fill()
+    sd2d.color([0,1,1,1])
+    sd2d.circle(0,0.2,0.01)
+    sd2d.circle(0,-0.2,0.01)
+    sd2d.circle(0.2,-0.2,0.01)
+    sd2d.circle(-0.2,-0.2,0.01)
+    sd2d.circle(0.2,0,0.01)
+    sd2d.circle(-0.2,0,0.01)
 
     sd2d.stroke()
     sd2d.stroke_weight(0.002)
@@ -52,10 +62,9 @@ def on_mouse_motion(x,y,dx,dy):
     global MOD_1
     global MOD_2
 
-    if MOD_1: mat[0] += np.float32([dx/app.width,dy/app.height])
-    if MOD_2: mat[1] += np.float32([dx/app.width,dy/app.height])
+    # if MOD_1: mat[0] += np.float32([dx/app.width*2,dy/app.height*2])
+    # if MOD_2: mat[1] += np.float32([dx/app.width*2,dy/app.height*2])
 
-    sd2d.prog["matrix"].value = tuple(np.ravel(mat))
 
 
 @app.event
