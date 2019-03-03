@@ -1,9 +1,11 @@
 import pyglet
 from draw import Draw
+from anima import Anima
 import numpy as np
 
-app = pyglet.window.Window(1024,1024,resizable = True)
+app = pyglet.window.Window(600,600,resizable = True)
 draw = Draw()
+anima = Anima()
 sd2d = draw.sd2d
 
 time = 0
@@ -15,7 +17,15 @@ mat = np.float32([[1,0],
                   [0,1]])
 mat0 = np.copy(mat)
 
-sd2d.viewport(2,2)
+sd2d.viewport(10,10)
+
+v1 = anima.track(val = 0, loop=1)
+v1.set_kf(0,-1)
+v1.set_kf(0.5, 1)
+v1.set_kf(2, -1)
+
+for kf in v1.kfs:
+    print(kf.time, kf.val)
 
 @app.event
 def on_draw():
@@ -24,24 +34,22 @@ def on_draw():
     global MOD_2
     draw.clear()
 
-    sd2d.color([1,0,1,0.5])
+    sd2d.color([1,0,0.5,1])
     sd2d.stroke()
-    sd2d.stroke_weight(0.001)
-    sd2d.smooth(0.002)
+    sd2d.stroke_weight(0.02)
+    sd2d.smooth(0.01)
 
     for y in range(21):
-        sd2d.line(-1,y/20*2-1,1,y/20*2-1)
+        if y % 2 == 0: sd2d.stroke_weight(0.05)
+        else: sd2d.stroke_weight(0.01)
+        sd2d.line(-5,y/20*10-5,5,y/20*10-5)
     for x in range(21):
-        sd2d.line(x/20*2-1,-1,x/20*2-1,1)
+        if x % 2 == 0: sd2d.stroke_weight(0.05)
+        else: sd2d.stroke_weight(0.01)
+        sd2d.line(x/20*10-5,-5,x/20*10-5,5)
 
     sd2d.fill()
     sd2d.color([0,1,1,1])
-    sd2d.circle(0,0.2,0.01)
-    sd2d.circle(0,-0.2,0.01)
-    sd2d.circle(0.2,-0.2,0.01)
-    sd2d.circle(-0.2,-0.2,0.01)
-    sd2d.circle(0.2,0,0.01)
-    sd2d.circle(-0.2,0,0.01)
 
     sd2d.stroke()
     sd2d.stroke_weight(0.002)
@@ -55,7 +63,7 @@ def on_draw():
 
     sd2d.fill()
     sd2d.color([0,1,0,1])
-    sd2d.circle(0,0,0.01)
+    sd2d.circle(v1.get(),0,0.1)
 
 @app.event
 def on_mouse_motion(x,y,dx,dy):
@@ -92,6 +100,7 @@ def on_resize(w,h):
 def update(dt):
     global time
     time += dt
+    anima.update(time)
     pass
 
 pyglet.clock.schedule_interval(update,1/60)
