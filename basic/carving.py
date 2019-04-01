@@ -49,11 +49,10 @@ def draw_path(img,path,color=[255,0,0]):
 
 def carve_path(img,path):
     m, n = img.shape[: 2]
-    out = np.zeros((m, n - 1, 3))
+    out = np.zeros((m, n - 1, img.shape[2]))
     for y in range(m):
-        out[y, :, 0] = np.delete(img[y, :, 0], path[y])
-        out[y, :, 1] = np.delete(img[y, :, 1], path[y])
-        out[y, :, 2] = np.delete(img[y, :, 2], path[y])
+        for ch in range(img.shape[2]):
+            out[y, :, ch] = np.delete(img[y, :, ch], path[y])
     return out
 
 def add_path(img,path):

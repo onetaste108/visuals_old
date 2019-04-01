@@ -1,0 +1,25 @@
+<CanvasWidget>:
+    Button:
+        text: "Delete"
+        top: root.top
+        x: -1
+        width: 100
+        height: 30
+        on_release: root.clear_canvas()
+
+    BoxLayout:
+        orientation: "horizontal"
+        padding: 10
+        spacing: 2
+        x: 0
+        y: 0
+        height: 50
+        width: root.width
+
+        RadioButton:
+            group: "color"
+            text: "fuck"
+        RadioButton:
+            group: "color"
+            text: "you"
+            state: "down"

@@ -29,7 +29,8 @@ float line(vec2 p, vec2 a, vec2 b)
 // VARIABLES ------------------------------------------------------------------
 
 varying vec2 v_pos;
-// uniform mat2 matrix;
+uniform vec2 ih;
+uniform vec2 jh;
 
 uniform vec4 color;
 uniform float stroke_weight;
@@ -64,7 +65,9 @@ void main()
   }
   else if (SHAPE == LINE)
   {
-    d = line(pos, p1, p2);
+    vec2 np1 = p1[0]*ih + p1[1]*jh;
+    vec2 np2 = p2[0]*ih + p2[1]*jh;
+    d = line(pos, np1, np2);
   }
 
   vec4 c;
