@@ -6,18 +6,23 @@ else console.log("GL loaded!");
 
 
 var vss = `
-attribute vec4 pos;
+attribute vec2 pos;
+uniform vec2 res;
 varying vec2 v_pos;
 void main() {
-  v_pos = pos.xy;
-  gl_Position = pos;
+  v_pos = pos/res;
+  v_pos = v_pos * 2.0;
+  v_pos = v_pos - 1.0;
+  v_pos = v_pos * vec2(1.0, -1.0);
+  gl_Position = vec4(v_pos,0,1);
 }
 `;
 var fss = `
 precision mediump float;
+uniform vec4 color;
 varying vec2 v_pos;
 void main() {
-  gl_FragColor = vec4(sin(v_pos.x*20.0)/2.0+0.5,0,0,1);
+  gl_FragColor = color;
 }
 `;
 
@@ -30,13 +35,16 @@ var pos_loc = gl.getAttribLocation(prog, "pos");
 var pos_buf = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, pos_buf);
 
+var res_loc = gl.getUniformLocation(prog, "res");
+var col_loc = gl.getUniformLocation(prog, "color");
+
 var positions = [
-  -1,  -1,
-  -1,  1,
-  1,  -1,
-  1,  -1,
-  -1, 1,
-  1,  1
+  10,10,
+  10,100,
+  100,10,
+  100,10,
+  10,100,
+  100,100
 ]
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
@@ -46,6 +54,7 @@ gl.viewport(0,0,canvas.width,canvas.height);
 gl.clearColor(0,0,0,1);
 gl.clear(gl.COLOR_BUFFER_BIT);
 gl.useProgram(prog);
+
 
 gl.enableVertexAttribArray(pos_loc);
 gl.bindBuffer(gl.ARRAY_BUFFER, pos_buf);
@@ -57,10 +66,13 @@ var stride = 0;
 var offset = 0;
 gl.vertexAttribPointer(pos_loc, size, type, normalize, stride, offset);
 
-var drawtype = gl.TRIANGLES;
-var offset = 0;
-var count = 6;
-gl.drawArrays(drawtype, offset, count);
+gl.uniform2f(res_loc, gl.canvas.width, gl.canvas.height);
+
+for (var ii = 0; ii < 50; ++ii) {
+  setRect(gl, random(300), random(300), random(300), random(300));
+  gl.uniform4f(col_loc, Math.random(), Math.random(), Math.random(), Math.random());
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
 
 function createShader(gl, type, source) {
   var shader = gl.createShader(type);
@@ -90,4 +102,24 @@ function resizeCanvas(canvas) {
     canvas.width = displayWidth;
     canvas.height = displayHeight;
   }
+}
+
+function random(range) {
+  return Math.floor(Math.random() * range);
+}
+
+function setRect(gl, x, y, w, h) {
+  var x1 = x;
+  var x2 = x + w;
+  var y1 = y;
+  var y2 = y + h;
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    x1, y1,
+    x1, y2,
+    x2, y1,
+    x2, y1,
+    x1, y2,
+    x2, y2
+  ]), gl.STATIC_DRAW);
 }
