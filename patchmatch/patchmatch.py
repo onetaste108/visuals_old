@@ -143,11 +143,11 @@ def randomize(img1,img2,offsets,best_vals,y,x,ksize,pm1,pn1,pm2,pn2,stride_1,str
 @njit("void(f4[:,:,:],f4[:,:,:],i4[:,:,:],f4[:,:],i8,i8,i8,i8,i8,i8,i8,i8,b1,b1)")
 def iterate(img1,img2,offsets,best_vals,dir,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2,p,r):
     if dir > 0:
-        r = [0,pm1,0,pn1]
+        rr = [0,pm1,0,pn1]
     else:
-        r = [pm1-1,1,pn1-1,1]
-    for i in range(r[0],r[1],dir):
-        for j in range(r[2],r[3],dir):
+        rr = [pm1-1,1,pn1-1,1]
+    for i in range(rr[0],rr[1],dir):
+        for j in range(rr[2],rr[3],dir):
             if p:
                 propagate(img1,img2,offsets,best_vals,i,j,dir,ksize,pm1,pn1,pm2,pn2,stride_1,stride_2)
             if r:

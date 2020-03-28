@@ -3,20 +3,36 @@ import img_utils as im
 import numpy as np
 from netty import netty_utils as nutil
 from IPython.display import clear_output
+import os
 
+def load_folder(path):
+    files = os.listdir(path)
+    imgs = []
+    for f in files:
+        try:
+            imgs.append(im.load(os.path.join(path,f)))
+        except:
+            print("Failed to load",f)
+    return imgs
 
-def image(path, s = 1):
+def image(img, s = 1, strech = True, mask=None):
     global images
     global scales
-    images.append(im.load(path))
-    scales.append(s)
+    global masks
+    images.append(img)
+    masks.append(mask)
+    scales.append([s,img.shape[:2][::-1],strech])
     
-def background(path = None):
+def images(*args):
+    for a in args:
+        image(*a)
+    
+def background(img=None):
     global x0
-    if path is None:
+    if img is None:
         x0 = None
         return
-    x0 = im.load(path)
+    x0 = img
     
 def layers(l = [1,4,7]):
     global la
@@ -36,7 +52,7 @@ def step(s = 1.2):
     
 def iters(it = 300):
     global its
-    its = 300
+    its = it
     
 def reset():
     global la
@@ -47,8 +63,10 @@ def reset():
     global its
     global images
     global scales
+    global masks
     images = []
     scales = []
+    masks = []
     
     layers()
     resolution()
@@ -66,6 +84,12 @@ def run():
     global images
     global scales
     
+    _scales = scales
+    scales = []
+    for s in _scales:
+        if s[2]: scales.append(s[0])
+        else: scales.append(im.propscale(np.float32(res), np.float32(s[1]))*s[0])
+    
     net = Netty()
     net.clear()
     net.args["style_layers"] = la
@@ -80,7 +104,7 @@ def run():
         net.args["size"] = s_
         net.args["maxfun"] = m_
         print("Setting style...")
-        net.set_style(images, None, scales, None)
+        net.set_style(images, masks, scales, None)
         net.set_x0(x)
         print("Setup...")
         net.setup()
