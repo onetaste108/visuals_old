@@ -1,8 +1,8 @@
-import keras
+from tensorflow import keras
 import tensorflow as tf
-from keras.layers import Input, Lambda
-from keras.models import Model
-from keras import backend as K
+from tensorflow.keras.layers import Input, Lambda
+from tensorflow.keras.models import Model
+from tensorflow.keras import backend as K
 
 from netty import model_vgg
 from netty import model_variational

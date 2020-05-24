@@ -1,6 +1,6 @@
-from keras import backend as K
-from keras.layers import Lambda, Input
-from keras.models import Model
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Lambda, Input
+from tensorflow.keras.models import Model
 
 def variation_l(weight=0.01, power=1.25):
     def fn(x):

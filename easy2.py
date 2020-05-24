@@ -57,6 +57,7 @@ def iters(it = 300):
 def reset():
     global la
     global x0
+    global x
     global res
     global ires
     global st
@@ -74,9 +75,10 @@ def reset():
     step()
     iters()
     
-def run():
+def run(config = {}):
     global la
     global x0
+    global x
     global res
     global ires
     global st
@@ -93,6 +95,8 @@ def run():
     net = Netty()
     net.clear()
     net.args["style_layers"] = la
+    for key in config:
+        net.args[key] = config[key]
     net.build()
     
     x = x0
@@ -111,4 +115,9 @@ def run():
         print("Render!")
         x=net.render()
         clear_output()
-        im.save_frame(x,"data/bin",q=95)
+#         im.save_frame(x,"data/bin")
+        
+def save(path):
+    os.makedirs(path, exist_ok=True)
+    global x
+    im.save_frame(x, path)

@@ -2,13 +2,13 @@ from netty.build import build
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 from scipy.optimize import minimize
-
-from keras import backend as K
+import tensorflow as tf
+from tensorflow.keras import backend as K
 import img_utils as im
 from netty.vgg_utils import *
 from netty import gram_patcher
 from netty import netty_utils as nutil
-
+tf.compat.v1.disable_eager_execution()
 class Netty:
     def __init__(self):
         self.args = {

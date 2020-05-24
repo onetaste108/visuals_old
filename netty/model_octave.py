@@ -1,6 +1,6 @@
-from keras.layers import Lambda, Input
-from keras.models import Model
-from keras import backend as K
+from tensorflow.keras.layers import Lambda, Input
+from tensorflow.keras.models import Model
+from tensorflow.keras import backend as K
 import numpy as np
 
 def gauss_l(a=0.4):

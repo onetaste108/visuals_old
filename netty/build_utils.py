@@ -1,4 +1,4 @@
-from keras.models import Model
+from tensorflow.keras.models import Model
 
 def extract_layers(base_model, layers):
     inputs = base_model.input

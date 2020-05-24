@@ -1,8 +1,8 @@
 from netty.build_utils import *
 from netty import model_vgg
 from netty import model_octave
-from keras.layers import Input, Lambda, Multiply, Concatenate
-from keras import backend as K
+from tensorflow.keras.layers import Input, Lambda, Multiply, Concatenate
+from tensorflow.keras import backend as K
 import tensorflow as tf
 
 def apply_mask():
@@ -17,7 +17,7 @@ def apply_mask():
 def mask_gram_l():
     def fn(x):
         mask = x[1][0]
-        mask = K.cast(tf.count_nonzero(mask),"float32")
+        mask = K.cast(tf.math.count_nonzero(mask),"float32")
         x = x[0]
         shape = K.shape(x)
         x = K.reshape(x, (-1, shape[3]))

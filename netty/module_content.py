@@ -1,8 +1,8 @@
 from netty.build_utils import *
 from netty import model_vgg
 from netty import model_octave
-from keras.layers import Input, Lambda
-from keras import backend as K
+from tensorflow.keras.layers import Input, Lambda
+from tensorflow.keras import backend as K
 
 def loss_l(w):
     def fn(x):

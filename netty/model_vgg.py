@@ -1,6 +1,6 @@
-import keras
-from keras.applications import vgg19
-from keras.applications import vgg16
+from tensorflow import keras
+from tensorflow.keras.applications import vgg19
+from tensorflow.keras.applications import vgg16
 import os
 
 def create_model(model="vgg19", pool="avg", padding="same"):
